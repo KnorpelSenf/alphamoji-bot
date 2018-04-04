@@ -4,7 +4,6 @@ const slimbot = new Slimbot(process.env.DEV_BOT_API_TOKEN);
 
 const database = require('./emoji');
 
-
 // Register listeners
 slimbot.on('message', message => {
     // get msg text
@@ -12,15 +11,14 @@ slimbot.on('message', message => {
     // build unicode
     var unicode = touni(txt);
     var searchres = findemoji(txt, unicode);
-    var reponse = pretty(searchres);
 
-    slimbot.sendMessage(message.chat.id, 'Searching for ' + unicode);
+    var response;
+    if (searchres)
+        reponse = pretty(searchres);
+    else
+        response = 'Nothing found!';
+
     slimbot.sendMessage(message.chat.id, response);
-
-
-  //  var msg = "";
-  //slimbot.sendMessage(message.chat.id, msg);
-
 });
 
 function touni(emoji) {
@@ -40,10 +38,25 @@ function touni(emoji) {
 
 function findemoji(txt, unicode) {
   for (key in database) {
-    if(database.key.output===unicode) {
+    if(key.output===unicode) {
       return database.key;
     }
   }
+}
+
+function pretty(emoji) {
+    var name = emoji.name;
+    var output = emoji.output;
+    var alphanames = [emoji.alpha_code].push(emoji.aliases.split("|"));
+    var count = alphanames.length;
+    var result = '**' + name + '**\n\nUnicode: ' + output + '\nAlpha Names: ';
+    for (var i = 0; i < count; i++) {
+        var append = '`' + alphanames[i] + '`';
+        if (i < count - 1)
+            append += ', ';
+        result += append;
+    }
+    return result;
 }
 
 slimbot.on('edited_message', message => {
