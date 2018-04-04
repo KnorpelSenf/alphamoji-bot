@@ -1,3 +1,3 @@
 var obj = require('./testfile');
-console.log(JSON.stringify(obj['2049']));
+console.log(JSON.stringify(obj));
 
