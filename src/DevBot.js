@@ -1,50 +1,50 @@
-var fs = require("fs");
 require('dotenv').load();
 const Slimbot = require('slimbot');
 const slimbot = new Slimbot(process.env.DEV_BOT_API_TOKEN);
 
-const database = JSON.parse(fs.readFileSync("emoji.json"));
-const keys = Object.keys(database);
+const database = require('./emoji');
+
 
 // Register listeners
 slimbot.on('message', message => {
     // get msg text
     var txt = message.text;
-    var len = txt.length;
     // build unicode
-    var unicode = "";
-    for (var i = 0; i < len; i ++) {
-        var c = txt.charCodeAt(i);
-        var u = c.toString(16);
-        while (u.length < 4)
-            u = '0' + u;
-        unicode += u;
-        if (i < len - 1)
-            unicode += "-";
-    }
-    slimbot.sendMessage(message.chat.id, 'Searching for ' + unicode);
-    var msg = "";
-    // find entry in res
+    var unicode = touni(txt);
+    var searchres = findemoji(txt, unicode);
+    var reponse = pretty(searchres);
 
-    var key = keys[0];
-    var emoji = database.key;
-    var debug = JSON.stringify(emoji);
-    slimbot.sendMessage(message.chat.id, 'key is ' + key);
-    slimbot.sendMessage(message.chat.id, 'emoji is ' + emoji);
-    slimbot.sendMessage(message.chat.id, 'debug is ' + debug);
-    
-    for (var i = 0; i < keys.length; i++) {
-        var emoji = database.keys[i];
-        if (emoji.output === unicode) {
-            msg = emoji.name;
-            break;
-        }
-    }
-    if (msg.length === 0)
-        msg = 'Nothing found!';
-    slimbot.sendMessage(message.chat.id, msg);
-    
+    slimbot.sendMessage(message.chat.id, 'Searching for ' + unicode);
+    slimbot.sendMessage(message.chat.id, response);
+
+
+  //  var msg = "";
+  //slimbot.sendMessage(message.chat.id, msg);
+
 });
+
+function touni(emoji) {
+  var len = emoji.length;
+  var unicode = "";
+  for (var i = 0; i < len; i ++) {
+      var c = emoji.charCodeAt(i);
+      var u = c.toString(16);
+      while (u.length < 4)
+          u = '0' + u;
+      unicode += u;
+      if (i < len - 1)
+          unicode += "-";
+  }
+  return unicode;
+}
+
+function findemoji(txt, unicode) {
+  for (key in database) {
+    if(database.key.output===unicode) {
+      return database.key;
+    }
+  }
+}
 
 slimbot.on('edited_message', message => {
   // reply when user edits a message
