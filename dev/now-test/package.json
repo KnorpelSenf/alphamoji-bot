@@ -1,0 +1,10 @@
+{
+    "name": "alphamoji-bot",
+    "version": "0.1.0",
+    "dependencies": {
+        "slimbot": "latest"
+    },
+    "scripts": {
+        "start": "node NowTest.js"
+    }
+}
