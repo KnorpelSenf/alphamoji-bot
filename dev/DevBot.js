@@ -2,7 +2,7 @@ require('dotenv').load();
 const Slimbot = require('slimbot');
 const slimbot = new Slimbot(process.env.DEV_BOT_API_TOKEN);
 
-const database = require('./emoji');
+const database = require('../src/emoji');
 
 // Register listeners
 slimbot.on('message', message => {
