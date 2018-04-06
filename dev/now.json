@@ -1,0 +1,5 @@
+{
+  "env": {
+     "DEV_BOT_API_TOKEN": "@alphamoji-dev-bot-api-token"
+  }
+}

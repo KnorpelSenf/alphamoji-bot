@@ -1,0 +1,11 @@
+{
+    "name": "alphamoji-dev-bot",
+    "version": "0.1.0",
+    "dependencies": {
+        "slimbot": "latest",
+        "dotenv": "latest"
+    },
+    "scripts": {
+        "start": "node DevBot.js"
+    }
+}

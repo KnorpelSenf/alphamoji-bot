@@ -2,7 +2,9 @@ require('dotenv').load();
 const Slimbot = require('slimbot');
 const slimbot = new Slimbot(process.env.DEV_BOT_API_TOKEN);
 
-const database = require('../src/emoji');
+console.log('wtf');
+
+const database = require('./emoji_dev');
 
 // Register listeners
 slimbot.on('message', message => {
@@ -43,14 +45,11 @@ function touni(emoji) {
 function findemoji(txt, unicode) {
     if (database[unicode])
         return database[unicode];
-    var ps = undefined;
-    var unils = unicode.split('-');
-    if (unils.length <= 5) {
-        ps = powerset(unils);
-        for (i in ps)
-            if (database[ps[i]])
-                return database[ps[i]];
-    }
+    var unils = unicode.split('-').slice(0, 5);
+    var ps = powerset(unils);
+    for (i in ps)
+        if (database[ps[i]])
+            return database[ps[i]];
     for (key in database) {
         var emoji = database[key];
         if(emoji.output === unicode)
@@ -79,7 +78,6 @@ function powerset(array) {
 }
 
 function pretty(emoji) {
-    console.log(JSON.stringify(emoji));
     // get name
     var name = emoji.name;
     // get unicode output
@@ -107,21 +105,18 @@ function pretty(emoji) {
             append += ', ';
         alphanames += append;
     }
-    var result =
-        '<strong>' + name + '</strong>\n'
+    return '<strong>' + name + '</strong>\n'
         + moji + '\n'
         + 'Unicode: <code>' + output + '</code>\n'
-        + 'Alpha Name' + (alphanameslist.length > 1 ? 's' : '') + ': ' + alphanames
-    console.log(result);
-    return result;
+        + 'Alpha Name' + (alphanameslist.length > 1 ? 's' : '') + ': ' + alphanames;
 }
 
 slimbot.on('edited_message', message => {
   // reply when user edits a message
-  slimbot.sendMessage(message.chat.id, 'Editing your message might not help, but at least it proves we can already detect that sort of event!');
+  slimbot.sendMessage(message.chat.id, 'Editing your message might not do much, but at least it proves we can already detect that sort of event!');
 });
+
+console.log('instance running!');
 
 // Call API
 slimbot.startPolling();
-
-//interesting
