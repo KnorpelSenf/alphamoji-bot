@@ -1,5 +1,11 @@
 {
-  "env": {
-    "BOT_API_TOKEN": "@alphamoji-bot-api-token"
-  }
+    "env": {
+        "BOT_API_TOKEN": "@alphamojibot-api-token"
+    },
+    "scale": {
+        "bru1": {
+            "min": 1,
+            "max": 1
+        }
+    }
 }

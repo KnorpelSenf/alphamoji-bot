@@ -2,29 +2,68 @@ require('dotenv').load();
 const Slimbot = require('slimbot');
 const slimbot = new Slimbot(process.env.DEV_BOT_API_TOKEN);
 
-console.log('wtf');
-
+const config = require('./botconfig');
 const database = require('./emoji_dev');
+
+// prevent zeit.co from restarting the bot
+require('http').createServer().listen(3000);
 
 // Register listeners
 slimbot.on('message', message => {
-    // get msg text
-    var txt = message.text;
-    // build unicode
-    var unicode = touni(txt);
-    console.log('Request with "' + txt + '" which is in unicode "' + unicode + '"');
-    var searchres = findemoji(txt, unicode);
-
-    var response;
-    if (searchres)
-        response = pretty(searchres);
-    else
-        response = 'Nothing found!';
-
+    var chatType = message.chat.type;
+    if (chatType === 'channel')
+        return;
+    var response;    
     var params = {
         parse_mode: "html"
     }
-    slimbot.sendMessage(message.chat.id, response, params);
+
+    if (message.hasOwnProperty('text')) {
+        // get msg text
+        var txt = message.text;
+	
+	if (message.hasOwnProperty('entities') && message.entities[0].type === 'bot_command') {
+            
+            if (txt.startsWith('/start') || txt.startsWith('/help'))
+                response = config.helpmsg;
+            else if (txt.startsWith('/search'))
+                if (chatType === 'group' || chatType === 'supergroup') {
+                    response = 'Hi! How can I help?';
+                    params.reply_to_message_id = message.message_id;
+                    params.reply_markup = JSON.stringify({
+                        force_reply: true,
+                        selective: true
+                    });
+                } else {
+                    response = "This command can be used in groups to search for an emoji. In this chat, I'm always listening to you."
+                }
+            else if (txt.startsWith('/feedback'))
+                response = 'Like this bot? Hit this link and rate it!\nhttps://telegram.me/storebot?start=alphamojibot';
+            else
+                response = 'Unknown command. Try /help';
+            
+        } else {
+            // build unicode
+            var unicode = touni(txt);
+            
+            var searchres = findemoji(txt, unicode);
+
+            console.log(searchres);
+            
+            if (searchres && searchres.length > 0)
+                response = prettySearchRes(searchres);
+            else
+                response = 'Nothing found! Try less input or shorter words.';
+        }
+        
+    } else if (chatType === 'group' || chatType === 'supergroup') {
+        return;
+    } else {
+        response = 'This bot currently only supports searching alpha names for emoji! Type /help for an introduction.';
+    }
+
+    if (chatType !== 'channel')
+        slimbot.sendMessage(message.chat.id, response, params);
 });
 
 function touni(emoji) {
@@ -44,20 +83,28 @@ function touni(emoji) {
     
 function findemoji(txt, unicode) {
     if (database[unicode])
-        return database[unicode];
+        return [database[unicode]];
     var unils = unicode.split('-').slice(0, 5);
     var ps = powerset(unils);
-    for (i in ps)
-        if (database[ps[i]])
-            return database[ps[i]];
-    for (key in database) {
-        var emoji = database[key];
-        if(emoji.output === unicode)
-            return emoji;
-        if (ps)
-            for (i in ps)
-                if (emoji.output === ps[i])
-                    return emoji;
+    ps.sort(function(a,b) {
+        return b.length - a.length;
+    });
+    for (i in ps) {
+        var code = '';
+        for (var j = 0; j < ps[i].length; j++) {
+            code += ps[i][j];
+            if (j < ps[i].length - 1)
+                code += '-';
+        }
+        for (key in database) {
+            var emoji = database[key];
+            if (emoji.output === code) {
+                return [emoji];
+            }
+        }
+        if (database[code]) {
+            return [database[code]];
+        }
     }
 }
 
@@ -75,6 +122,14 @@ function powerset(array) {
     var result = [];
     fork(0, []);
     return result;
+}
+
+function prettySearchRes(emojiList) {
+    var res = '';
+    for (i in emojiList) {
+        res += pretty(emojiList[i]) + '\n';
+    }
+    return res;
 }
 
 function pretty(emoji) {
@@ -113,10 +168,9 @@ function pretty(emoji) {
 
 slimbot.on('edited_message', message => {
   // reply when user edits a message
-  slimbot.sendMessage(message.chat.id, 'Editing your message might not do much, but at least it proves we can already detect that sort of event!');
+  slimbot.sendMessage(message.chat.id, 'Editing your message might do much yet, but at least it proves we can already detect that sort of event!');
 });
-
-console.log('instance running!');
 
 // Call API
 slimbot.startPolling();
+
