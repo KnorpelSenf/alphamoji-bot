@@ -15,7 +15,8 @@ slimbot.on('message', message => {
         return;
     var response;    
     var params = {
-        parse_mode: "html"
+        parse_mode: "html",
+        reply_to_message_id: message.message_id
     }
 
     if (message.hasOwnProperty('text')) {
@@ -29,7 +30,6 @@ slimbot.on('message', message => {
             else if (txt.startsWith('/search'))
                 if (chatType === 'group' || chatType === 'supergroup') {
                     response = 'Hi! How can I help?';
-                    params.reply_to_message_id = message.message_id;
                     params.reply_markup = JSON.stringify({
                         force_reply: true,
                         selective: true
@@ -47,6 +47,8 @@ slimbot.on('message', message => {
             var unicode = touni(txt);
             
             var searchres = findemoji(txt, unicode);
+
+            // console.log(searchres);
             
             if (searchres && searchres.length > 0)
                 response = prettySearchRes(searchres);
@@ -78,15 +80,22 @@ function touni(emoji) {
     }
     return unicode;
 }
-    
+
 function findemoji(txt, unicode) {
+    var unicodeResults = findByUnicode(unicode);
+    var txtResults = findByText(txt);
+    return unicodeResults.concat(txtResults);
+}
+
+function findByUnicode(unicode) {
     if (database[unicode])
         return [database[unicode]];
     var unils = unicode.split('-').slice(0, 5);
     var ps = powerset(unils);
-    ps.sort(function(a,b) {
-        return b.length - a.length;
-    });
+    // sorting by length is superfluous when using the current ps impl
+    // ps.sort(function(a,b) {
+    //     return b.length - a.length;
+    // });
     for (i in ps) {
         var code = '';
         for (var j = 0; j < ps[i].length; j++) {
@@ -104,6 +113,7 @@ function findemoji(txt, unicode) {
             return [database[code]];
         }
     }
+    return [];
 }
 
 // taken from SO (see https://stackoverflow.com/a/42774126/4453823)
@@ -122,10 +132,180 @@ function powerset(array) {
     return result;
 }
 
+function findByText(txt) {
+    txt = txt.toLowerCase();
+    
+    var result = [];
+    // prios (eq equals, ic includes, sw startsWith, ew endsWith)
+    
+    //  0 -- name eq
+    //  1 -- alpha code eq
+    //  2 -- name word eq
+    //  3 -- alpha code word eq
+    
+    //  4 -- name sw
+    //  5 -- name ew
+    //  6 -- alpha code sw
+    //  7 -- alpha code ew
+    //  8 -- name word sw
+    //  9 -- name word ew
+    // 10 -- alpha code word sw
+    // 11 -- alpha code word ew
+    
+    // 12 -- name ic
+    // 13 -- alpha code ic
+    // 14 -- name word ic
+    // 15 -- alpha code word ic
+    
+    var stripColons = function(alphaCode) {
+        return alphaCode.slice(1, alphaCode.length - 1);
+    }
+
+    SEARCH:
+    for (key in database) {
+        // emoji
+        var emoji = database[key];
+        // emoji name
+        var ename = emoji.name.toLowerCase();
+        // emoji alpha codes
+        var ecodes = [emoji.alpha_code]
+            .concat(emoji.aliases.split('|'))
+            .filter(e => e !== '')
+            .map(ac => ac.toLowerCase());
+        // emoji alpha codes without colons
+        var icodes = ecodes.map(stripColons);
+        // emoji alpha codes with and without colons
+        var codes = ecodes.concat(icodes);
+        // words in emoji name
+        var enameWords = ename.split(' ');
+        // words in emoji alpha codes
+        var icodeWords = icodes.join(' ').replace(/_/g, ' ').split(' ');
+        
+        // EQUALS
+        // name eq
+        if (ename === txt) {
+            result.push({ em: emoji, prio: 0 });
+            continue SEARCH;
+        }
+        // alpha code eq
+        for (i in codes) {
+            if (codes[i] === txt) {
+                result.push({ em: emoji, prio: 1 });
+                continue SEARCH;
+            }
+        }
+        // name word eq
+        for (i in enameWords) {
+            if (enameWords[i] === txt) {
+                result.push({ em: emoji, prio: 2 });
+                continue SEARCH;
+            }
+        }
+        // alpha code word eq
+        for (i in icodeWords) {
+            if (icodeWords[i] === txt) {
+                result.push({ em: emoji, prio: 3 });
+                continue SEARCH;
+            }
+        }
+
+        // STARTS WITH & ENDS WITH
+        // name sw&ew
+        if (ename.startsWith(txt)) {
+            result.push({ em: emoji, prio: 4 });
+            continue SEARCH;
+        }
+        if (ename.endsWith(txt)) {
+            result.push({ em: emoji, prio: 5 });
+            continue SEARCH;
+        }
+        // alpha code sw&ew
+        for (i in codes) {
+            if (codes[i].startsWith(txt)) {
+                result.push({ em: emoji, prio: 6 });
+                continue SEARCH;
+            }
+        }
+        for (i in codes) {
+            if (codes[i].endsWith(txt)) {
+                result.push({ em: emoji, prio: 7 });
+                continue SEARCH;
+            }
+        }
+        // name word sw&ew
+        for (i in enameWords) {
+            if (enameWords[i].startsWith(txt)) {
+                result.push({ em: emoji, prio: 8 });
+                continue SEARCH;
+            }
+        }
+        for (i in enameWords) {
+            if (enameWords[i].endsWith(txt)) {
+                result.push({ em: emoji, prio: 9 });
+                continue SEARCH;
+            }
+        }
+        // alpha code word sw&ew
+        for (i in icodeWords) {
+            if (icodeWords[i].startsWith(txt)) {
+                result.push({ em: emoji, prio: 10 });
+                continue SEARCH;
+            }
+        }
+        for (i in icodeWords) {
+            if (icodeWords[i].endsWith(txt)) {
+                result.push({ em: emoji, prio: 11 });
+                continue SEARCH;
+            }
+        }
+
+        // INCLUDES
+        // name ic
+        if (ename.includes(txt)) {
+            result.push({ em: emoji, prio: 12 });
+            continue SEARCH;
+        }
+        // alpha code ic
+        for (i in codes) {
+            if (codes[i].includes(txt)) {
+                result.push({ em: emoji, prio: 13 });
+                continue SEARCH;
+            }
+        }
+        // name word ic
+        for (i in enameWords) {
+            if (enameWords[i].includes(txt)) {
+                result.push({ em: emoji, prio: 14 });
+                continue SEARCH;
+            }
+        }
+        // alpha code word ic
+        for (i in icodeWords) {
+            if (icodeWords[i].includes(txt)) {
+                result.push({ em: emoji, prio: 15 });
+                continue SEARCH;
+            }
+        }
+        
+    }
+    result.sort((a,b) => a.prio - b.prio);
+    return result.map(o => o.em);
+}
+
 function prettySearchRes(emojiList) {
     var res = '';
-    for (i in emojiList) {
-        res += pretty(emojiList[i]) + '\n';
+    displayList = emojiList.slice(0, 10);
+    if (displayList.length < emojiList.length) {
+        res = '(<em>showing top ' + displayList.length + ' of ' + emojiList.length
+            + ' total results</em>)\n';
+    } else if (emojiList.length > 1) {
+        res = '(<em>showing all ' + emojiList.length + ' results</em>)\n';
+    }
+    for (i in displayList) {
+        if (displayList.length > 1) {
+            res += '[Result ' + (Number(i) + 1) + ']:\n';
+        }
+        res += pretty(displayList[i]) + '\n\n';
     }
     return res;
 }
@@ -158,8 +338,8 @@ function pretty(emoji) {
             append += ', ';
         alphanames += append;
     }
-    return '<strong>' + name + '</strong>\n'
-        + moji + '\n'
+    return '<strong>' + name + '</strong>\n<code>'
+        + moji + '</code>\n'
         + 'Unicode: <code>' + output + '</code>\n'
         + 'Alpha Name' + (alphanameslist.length > 1 ? 's' : '') + ': ' + alphanames;
 }

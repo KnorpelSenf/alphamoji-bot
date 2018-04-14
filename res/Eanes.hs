@@ -8,8 +8,8 @@ import Data.List.Split
 import Numeric (showHex)
 
 transform :: [(String,String)] -> [[[String]]] -> String
-transform mapping = ("{'data':[" ++)
-                    . (++ "]}")
+transform mapping = ('{' ++)
+                    . (++ "}")
                     . unlines
                     . toJson
                     . applyMapping mapping
