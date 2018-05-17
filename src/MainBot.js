@@ -66,6 +66,11 @@ slimbot.on('message', message => {
         slimbot.sendMessage(message.chat.id, response, params);
 });
 
+slimbot.on('edited_message', message => {
+  // reply when user edits a message
+  slimbot.sendMessage(message.chat.id, 'Editing your message might do much yet, but at least it proves we can already detect that sort of event!');
+});
+
 function touni(emoji) {
     var len = emoji.length;
     var unicode = "";
@@ -343,11 +348,6 @@ function pretty(emoji) {
         + 'Unicode: <code>' + output + '</code>\n'
         + 'Alpha Name' + (alphanameslist.length > 1 ? 's' : '') + ': ' + alphanames;
 }
-
-slimbot.on('edited_message', message => {
-  // reply when user edits a message
-  slimbot.sendMessage(message.chat.id, 'Editing your message might do much yet, but at least it proves we can already detect that sort of event!');
-});
 
 // Call API
 slimbot.startPolling();
