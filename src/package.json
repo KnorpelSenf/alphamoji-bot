@@ -2,8 +2,8 @@
     "name": "alphamoji-bot",
     "version": "0.2.0",
     "dependencies": {
-        "slimbot": "latest",
-        "dotenv": "latest"
+        "dotenv": "^8.0.0",
+        "slimbot": "latest"
     },
     "scripts": {
         "start": "node MainBot.js"

@@ -1,4 +1,4 @@
-require('dotenv').load();
+require('dotenv').config();
 const Slimbot = require('slimbot');
 const slimbot = new Slimbot(process.env.BOT_API_TOKEN);
 

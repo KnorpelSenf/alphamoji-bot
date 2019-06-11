@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "env": {
         "BOT_API_TOKEN": "@alphamojibot-api-token"
     },
@@ -7,5 +8,6 @@
             "min": 1,
             "max": 1
         }
-    }
+    },
+    "public": true
 }
